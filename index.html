@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>All Upcoming Events</title>
+  <style>
+    body {
+      font-family: 'Inter', Arial, sans-serif;
+      background: #f5f7fa;
+      margin: 0;
+      padding: 40px 20px;
+    }
+    #event-list {
+      max-width: 700px;
+      margin: 0 auto;
+    }
+    .event-item {
+      display: flex;
+      flex-direction: column;
+      background: white;
+      border-radius: 10px;
+      padding: 20px;
+      margin-bottom: 16px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .event-item:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+    }
+    .event-date {
+      font-size: 14px;
+      color: #666;
+      margin-bottom: 8px;
+    }
+    .event-title {
+      font-size: 18px;
+      font-weight: bold;
+      color: #333;
+      margin-bottom: 6px;
+    }
+    .event-organizers {
+      font-size: 14px;
+      color: #444;
+      margin-bottom: 14px;
+    }
+    .signup-btn {
+      display: inline-block;
+      align-self: flex-start;
+      padding: 8px 16px;
+      background: #00aeef;
+      color: white;
+      text-decoration: none;
+      border-radius: 6px;
+      font-size: 14px;
+      transition: background 0.3s;
+    }
+    .signup-btn:hover {
+      background: #008fcc;
+    }
+    .no-signup {
+      font-size: 13px;
+      color: #aaa;
+      font-style: italic;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+
+<div id="event-list">Loading events...</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', async function() {
+  const eventList = document.getElementById('event-list');
+  const calendarId = 'bad1978f6f89f05dea011b5aa911989bebafdc59ef7b25fbe89f53736760a3b4@group.calendar.google.com';
+  const apiKey = 'AIzaSyB_5ZK0rKLEDqUtdOPk_vwMRX03ZW9pIMo';
+
+  const now = new Date().toISOString();
+
+  const url = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events?key=${apiKey}&timeMin=${now}&singleEvents=true&orderBy=startTime&maxResults=100`;
+
+  try {
+    const response = await fetch(url);
+    const data = await response.json();
+
+    eventList.innerHTML = '';
+
+    if (!data.items || data.items.length === 0) {
+      eventList.innerHTML = '<p>No upcoming events found.</p>';
+      return;
+    }
+
+    data.items.forEach(event => {
+      const title = event.summary || 'No Title';
+      const start = event.start.dateTime || event.start.date;
+      const startDate = new Date(start);
+
+      const startTimeFormatted = startDate.toLocaleDateString('en-GB', {
+        day: '2-digit', month: '2-digit', year: 'numeric'
+      }) + " " + startDate.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+
+      const description = event.description || '';
+
+      // Extract organizers
+      let organizersLabel = '';
+      let organizersNames = '';
+      const orgMatch = description.match(/(Organizer[s]?):\s*([^\n]+)/i);
+      if (orgMatch) {
+        organizersLabel = orgMatch[1];
+        organizersNames = orgMatch[2];
+      }
+
+      // Extract Sign-up link
+      let signupLink = '';
+      const linkMatch = description.match(/Sign-up link:\s*(https?:\/\/\S+)/i);
+      if (linkMatch) {
+        signupLink = linkMatch[1];
+      }
+
+      const container = document.createElement('div');
+      container.className = 'event-item';
+
+      container.innerHTML = `
+        <div class="event-date">${startTimeFormatted}</div>
+        <div class="event-title">${title}</div>
+        ${organizersNames ? `<div class="event-organizers"><strong>${organizersLabel}:</strong> ${organizersNames}</div>` : ''}
+        ${
+          signupLink
+          ? `<a href="${signupLink}" class="signup-btn" target="_blank">Sign Up</a>`
+          : `<div class="no-signup">Sign-up link not published yet.</div>`
+        }
+      `;
+
+      eventList.appendChild(container);
+    });
+
+  } catch (error) {
+    console.error('Error loading events:', error);
+    eventList.innerHTML = '<p>Error loading events.</p>';
+  }
+});
+</script>
+
+</body>
+</html>
